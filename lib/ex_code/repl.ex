@@ -83,7 +83,7 @@ defmodule ExCode.REPL do
       {:ok, updated_ctx} ->
         {:ok, updated_ctx}
 
-      {:error, %OpenaiEx.Error{kind: :rate_limit} = err} when attempt < 2 ->
+      {:error, %OpenaiEx.Error{kind: :rate_limit} = err} when attempt < 5 ->
         delay_secs = backoff(attempt + 1)
 
         IO.puts(TermUI.red("Error: #{inspect(err)}"))

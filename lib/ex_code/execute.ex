@@ -24,7 +24,7 @@ defmodule ExCode.Execute do
         tools: Tools.tools()
       )
 
-    IO.puts("\nRunning...")
+    IO.puts("Running...")
 
     case Chat.Completions.create(client, chat_req) do
       {:ok, resp} ->
@@ -47,7 +47,7 @@ defmodule ExCode.Execute do
 
     usage = Map.get(resp, "usage")
 
-    reasoning = Map.get(message, "reasoning", nil) || Map.get(message, "reasoning_content", nil)
+    reasoning = Map.get(message, "reasoning") || Map.get(message, "reasoning_content")
     content = Map.get(message, "content", "")
     tool_calls = Map.get(message, "tool_calls", [])
 
