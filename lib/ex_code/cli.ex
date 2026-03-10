@@ -9,15 +9,10 @@ defmodule ExCode.Cli do
     IO.puts(TermUI.blue("\nBase URL: #{TermUI.underline(Env.openai_base_url())}"))
     IO.puts(TermUI.blue("Model: #{TermUI.underline(Env.openai_model())}\n"))
 
-    client =
-      OpenaiEx.new(Env.openai_api_key())
-      |> OpenaiEx.with_base_url(Env.openai_base_url())
-      |> OpenaiEx.with_receive_timeout(45_000)
-
-    REPL.start(client)
+    REPL.new() |> REPL.start()
   end
 
-  def draw_banner(width) do
+  defp draw_banner(width) do
     title = "ExCode"
     # subtract border chars
     inner = width - 2

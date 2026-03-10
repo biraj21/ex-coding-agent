@@ -24,6 +24,8 @@ defmodule ExCode.Execute do
         tools: Tools.tools()
       )
 
+    IO.puts("\nRunning...")
+
     case Chat.Completions.create(client, chat_req) do
       {:ok, resp} ->
         handle_response(client, resp, ctx)
@@ -60,7 +62,7 @@ defmodule ExCode.Execute do
 
     ctx = Context.add(ctx, message)
 
-    IO.puts("\n#{TermUI.magenta("Finish Reason:")} #{finish_reason}")
+    IO.puts(TermUI.magenta("\nFinish Reason: #{TermUI.underline(finish_reason)}"))
 
     tool_call_outputs =
       Enum.map(tool_calls, fn tool_call ->
@@ -97,14 +99,16 @@ defmodule ExCode.Execute do
 
     ctx = Context.add_many(ctx, tool_call_outputs)
 
+    if usage != nil do
+      usage_pretty = Jason.encode!(usage, pretty: [indent: "  "])
+      IO.puts(TermUI.magenta("Usage: " <> usage_pretty))
+    end
+
     IO.puts("---------------------------------------")
 
     case tool_call_outputs do
-      [] ->
-        {:ok, ctx, usage}
-
-      _ ->
-        run_completion(client, ctx)
+      [] -> {:ok, ctx}
+      _ -> run_completion(client, ctx)
     end
   end
 end

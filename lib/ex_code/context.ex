@@ -29,12 +29,13 @@ defmodule ExCode.Context do
   def print(ctx) do
     IO.puts("\n#{TermUI.cyan("===== Context (messages) =====")}\n")
 
-    __MODULE__.get(ctx)
+    get(ctx)
     |> Enum.each(fn msg ->
       pretty = Jason.encode!(msg, pretty: [indent: "  "])
 
       colored =
         case msg do
+          %{"role" => "system"} -> TermUI.yellow(pretty)
           %{"role" => "assistant"} -> TermUI.light_orange(pretty)
           %{"role" => "tool"} -> TermUI.cyan(pretty)
           _ -> pretty
