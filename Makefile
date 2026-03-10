@@ -3,7 +3,10 @@ BIN := excode
 
 .PHONY: build run clean
 
-build:
+type-check:
+	mix dialyzer
+
+build: type-check
 	mix escript.build
 
 run:
