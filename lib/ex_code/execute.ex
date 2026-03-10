@@ -83,13 +83,14 @@ defmodule ExCode.Execute do
         IO.puts(TermUI.cyan("Args: #{pretty}\n"))
         result = Tools.handle_tool_call(name, args_json)
 
-        output =
+        {output, colored_output} =
           case result do
-            {:ok, output} -> output
-            {:error, reason} -> "error: #{reason}"
+            {:ok, output} -> {output, TermUI.cyan(output)}
+            {:error, reason} -> {"Error: #{reason}", TermUI.red("error: #{reason}")}
           end
 
-        IO.puts(TermUI.cyan("  === Tool Output ===\n#{output}\n"))
+        IO.puts(TermUI.cyan("  === Tool Output ==="))
+        IO.puts(colored_output)
 
         ChatMessage.tool(id, name, output)
       end)
