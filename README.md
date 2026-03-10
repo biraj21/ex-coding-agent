@@ -19,12 +19,14 @@ An AI-powered coding assistant that runs in your terminal as an interactive REPL
 ## Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone <repository-url>
    cd excode
    ```
 
 2. **Install dependencies**:
+
    ```bash
    mix deps.get
    ```
@@ -39,6 +41,7 @@ An AI-powered coding assistant that runs in your terminal as an interactive REPL
    ```
 
    For Cerebras users:
+
    ```env
    OPENAI_API_KEY=your_cerebras_api_key
    OPENAI_BASE_URL=https://api.cerebras.ai/v1
@@ -48,6 +51,7 @@ An AI-powered coding assistant that runs in your terminal as an interactive REPL
 ## Running ExCode
 
 ### Development Mode
+
 ```bash
 make run
 # or
@@ -55,6 +59,7 @@ mix run -e 'ExCode.main(System.argv())'
 ```
 
 ### Build Executable
+
 ```bash
 make build
 # or
@@ -62,11 +67,13 @@ mix escript.build
 ```
 
 Then run the executable:
+
 ```bash
 ./excode
 ```
 
 ### Clean Build
+
 ```bash
 make clean
 ```
@@ -95,12 +102,12 @@ Model: gpt-4o
 
 ExCode can use the following tools (via AI function calling):
 
-| Tool | Description |
-|------|-------------|
-| `read_file` | Read and display file contents with line numbers and hashes |
-| `write_file` | Write content to a file |
-| `run_bash_command` | Execute shell commands (requires user confirmation) |
-| `edit_file` | Edit a specific range of lines in a file with hash verification |
+| Tool               | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `read_file`        | Read and display file contents with line numbers and hashes     |
+| `write_file`       | Write content to a file                                         |
+| `run_bash_command` | Execute shell commands (requires user confirmation)             |
+| `edit_file`        | Edit a specific range of lines in a file with hash verification |
 
 ### Safety Features
 
@@ -139,4 +146,4 @@ Can I run this command? [y/N] > y
 
 ## License
 
-[Add your license here]
+MIT
