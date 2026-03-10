@@ -1,45 +1,46 @@
 defmodule ExCode.Context do
   alias ExCode.TermUI
 
-  @type t :: %__MODULE__{messages: :queue.queue(any())}
+  @type t :: %__MODULE__{}
 
-  defstruct messages: :queue.new()
+  defstruct messages: []
 
   @spec new() :: t()
   def new() do
     %__MODULE__{}
   end
 
-  @spec add(t(), any()) :: t()
-  def add(%__MODULE__{messages: q} = ctx, msg) do
-    %{ctx | messages: :queue.in(msg, q)}
+  @spec add(t(), map()) :: t()
+  def add(ctx, new_msg) do
+    %{ctx | messages: [new_msg | ctx.messages]}
   end
 
-  @spec add_many(t(), [any()]) :: t()
-  def add_many(%__MODULE__{messages: q} = ctx, messages) when is_list(messages) do
-    new_q =
-      Enum.reduce(messages, q, fn msg, acc ->
-        :queue.in(msg, acc)
-      end)
-
-    %{ctx | messages: new_q}
+  @spec add_many(t(), [map()]) :: t()
+  def add_many(ctx, new_msgs) do
+    %{ctx | messages: Enum.reverse(new_msgs) ++ ctx.messages}
   end
 
-  @spec to_list(t()) :: [any()]
-  def to_list(%__MODULE__{messages: q}) do
-    :queue.to_list(q)
+  @spec get(t()) :: [map()]
+  def get(ctx) do
+    Enum.reverse(ctx.messages)
   end
 
   @spec print(t()) :: :ok
-  def print(%__MODULE__{} = ctx) do
+  def print(ctx) do
     IO.puts("\n#{TermUI.cyan("===== Context (messages) =====")}\n")
 
-    ctx
-    |> to_list()
+    __MODULE__.get(ctx)
     |> Enum.each(fn msg ->
-      IO.puts(TermUI.yellow("--------"))
-      IO.inspect(msg, pretty: true, limit: :infinity)
-      IO.puts("")
+      pretty = Jason.encode!(msg, pretty: [indent: "  "])
+
+      colored =
+        case msg do
+          %{"role" => "assistant"} -> TermUI.light_orange(pretty)
+          %{"role" => "tool"} -> TermUI.cyan(pretty)
+          _ -> pretty
+        end
+
+      IO.puts(colored)
     end)
   end
 end

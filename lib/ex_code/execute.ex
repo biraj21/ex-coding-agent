@@ -20,7 +20,7 @@ defmodule ExCode.Execute do
     chat_req =
       Chat.Completions.new(
         model: Env.openai_model(),
-        messages: Context.to_list(ctx),
+        messages: Context.get(ctx),
         tools: Tools.tools()
       )
 
