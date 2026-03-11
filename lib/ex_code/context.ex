@@ -34,7 +34,7 @@ defmodule ExCode.Context do
       pretty = Jason.encode!(msg, pretty: [indent: "  "])
 
       colored =
-        case Map.get(msg, :role) || Map.get(msg, "role") do
+        case msg[:role] || msg["role"] do
           "system" -> TermUI.yellow(pretty)
           "assistant" -> TermUI.light_orange(pretty)
           "tool" -> TermUI.cyan(pretty)

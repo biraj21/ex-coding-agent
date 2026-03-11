@@ -13,10 +13,17 @@ defmodule ExCode.Execute do
 
   def execute(client, prompt, ctx) do
     user_msg = ChatMessage.user(prompt)
-    run_completion(client, Context.add(ctx, user_msg))
+
+    case run_completion(client, Context.add(ctx, user_msg)) do
+      {:done, ctx} -> {:ok, ctx}
+      {:tools, ctx} -> run_completion(client, ctx)
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp run_completion(client, ctx) do
+    IO.puts("Running...")
+
     chat_req =
       Chat.Completions.new(
         model: Env.openai_model(),
@@ -24,18 +31,13 @@ defmodule ExCode.Execute do
         tools: Tools.tools()
       )
 
-    IO.puts("Running...")
-
     case Chat.Completions.create(client, chat_req) do
-      {:ok, resp} ->
-        handle_response(client, resp, ctx)
-
-      {:error, reason} ->
-        {:error, reason}
+      {:ok, resp} -> handle_response(resp, ctx)
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp handle_response(client, resp, ctx) do
+  defp handle_response(resp, ctx) do
     %{
       "choices" => [
         %{
@@ -45,13 +47,13 @@ defmodule ExCode.Execute do
       ]
     } = resp
 
-    usage = Map.get(resp, "usage")
+    usage = resp["usage"]
 
-    reasoning = Map.get(message, "reasoning") || Map.get(message, "reasoning_content")
-    content = Map.get(message, "content", "")
-    tool_calls = Map.get(message, "tool_calls", [])
+    reasoning = message["reasoning"] || message["reasoning_content"]
+    content = message["content"]
+    tool_calls = message["tool_calls"]
 
-    if reasoning != "" && reasoning != nil do
+    if reasoning && reasoning != "" do
       IO.puts(TermUI.cyan("\nReasoning: #{reasoning}"))
     end
 
@@ -106,9 +108,10 @@ defmodule ExCode.Execute do
 
     IO.puts("---------------------------------------")
 
-    case tool_call_outputs do
-      [] -> {:ok, ctx}
-      _ -> run_completion(client, ctx)
+    if tool_call_outputs == [] do
+      {:done, ctx}
+    else
+      {:tools, ctx}
     end
   end
 end
