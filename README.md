@@ -1,64 +1,40 @@
 # ExCode
 
-An AI-powered coding assistant that runs in your terminal as an interactive REPL. Built with Elixir, ExCode provides intelligent code assistance using OpenAI-compatible APIs (including Cerebras).
+An AI coding assistant that lives in your terminal. Give it prompts and it reads files, edits code, and runs commands—just like you'd do, but with an AI at the wheel. Written in Elixir.
 
-## Features
+![Screenshot](ss.png)
 
-- **Interactive REPL**: Chat with an AI assistant that understands your codebase
-- **File Operations**: Read, write, and edit files with intelligent hashing for verification
-- **Command Execution**: Run shell commands with user permission prompts for safety
-- **Context Awareness**: Maintains conversation context across interactions
-- **Tool Calling**: Leverages AI models with function calling capabilities
-- **Rich Terminal UI**: Color-coded output with reasoning traces and tool call details
+## What it does
 
-## Prerequisites
+ExCode is a REPL that connects to OpenAI-compatible APIs (OpenAI, Cerebras, etc.). It has tools for:
 
-- **Elixir** ~> 1.19 ([Installation guide](https://elixir-lang.org/install.html))
-- **OpenAI API Key** or compatible API (e.g., Cerebras)
+- **Reading files** - With line numbers and hashes for safe editing
+- **Writing files** - Creating new files or overwriting existing ones
+- **Editing specific lines** - Edit a range of lines with hash verification
+- **Running commands** - Execute bash commands (with your approval first)
 
-## Setup
+The AI decides which tools to use based on what you ask.
 
-1. **Clone the repository**:
+## Quick start
 
-   ```bash
-   git clone <repository-url>
-   cd excode
-   ```
+### Requirements
 
-2. **Install dependencies**:
-
-   ```bash
-   mix deps.get
-   ```
-
-3. **Configure environment variables**:
-   Create a `.env` file in the project root with the following:
-
-   ```env
-   OPENAI_API_KEY=your_api_key_here
-   OPENAI_BASE_URL=https://api.openai.com/v1  # or your compatible API endpoint
-   OPENAI_MODEL=gpt-4o  # or your preferred model
-   ```
-
-   For Cerebras users:
-
-   ```env
-   OPENAI_API_KEY=your_cerebras_api_key
-   OPENAI_BASE_URL=https://api.cerebras.ai/v1
-   OPENAI_MODEL=llama3.1-70b
-   ```
-
-## Running ExCode
-
-### Development Mode
+- Elixir 1.19+
+- An API key for OpenAI or a compatible service
 
 ```bash
+# Install dependencies
+mix deps.get
+
+# Set up .env
+cp .env.example .env
+# Edit .env with your API key, base URL, and model
+
+# Run it
 make run
-# or
-mix run -e 'ExCode.main(System.argv())'
 ```
 
-### Build Executable
+Or build an escript:
 
 ```bash
 make build
@@ -72,78 +48,76 @@ Then run the executable:
 ./excode
 ```
 
-### Clean Build
+## Configuration
 
-```bash
-make clean
+Create a `.env` file:
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o
 ```
 
-## Usage
+For Cerebras:
 
-Once running, ExCode presents a simple REPL interface:
-
-```
-┌────────────────────────────┐
-│           ExCode           │
-└────────────────────────────┘
-
-Base URL: https://api.openai.com/v1
-Model: gpt-4o
-
-> Your prompt here...
+```env
+OPENAI_API_KEY=your_cerebras_key
+OPENAI_BASE_URL=https://api.cerebras.ai/v1
+OPENAI_MODEL=llama3.1-70b
 ```
 
-### REPL Commands
+## Using it
 
-- **`/exit`** or **`/quit`** - Exit the REPL
-- **`/ctx`** - Print the current conversation context
+Once running, you get a `>` prompt. Type what you need:
+
+```
+> read all the files in ./lib/ and summarize the architecture
+> create a new module for handling user input
+> run the tests
+```
+
+### REPL commands
+
+- `/exit` or `/quit` - Quit
+- `/ctx` - Show the conversation history
+
+## How it works
+
+The AI has access to tools via function calling. When you ask it to do something, it:
+
+1. Reads the relevant files
+2. Figures out what needs to happen
+3. Calls the right tools (read, write, edit, run command)
+4. Loops until the task is done
 
 ### Available Tools
 
 ExCode can use the following tools (via AI function calling):
 
-| Tool               | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
-| `read_file`        | Read and display file contents with line numbers and hashes     |
-| `write_file`       | Write content to a file                                         |
-| `run_bash_command` | Execute shell commands (requires user confirmation)             |
-| `edit_file`        | Edit a specific range of lines in a file with hash verification |
+| Tool               | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `read_file`        | Read and display file contents with line numbers and hashes |
+| `write_file`       | Write content to a file                                     |
+| `run_bash_command` | Execute shell commands (requires user confirmation)         |
+| `edit_file`        | Edit a specific range of lines in a file                    |
 
-### Safety Features
-
-- **Command Confirmation**: All bash commands require explicit user approval before execution
-- **Hash Verification**: File edits use line hashes to prevent accidental modifications
-- **Sensitive File Protection**: Configured to avoid reading sensitive files (.env, keys, credentials)
-
-## Example Session
-
-```
-> help me understand this project structure
-[AI reads files, explores structure]
-[AI provides analysis]
-
-> create a new module for user authentication
-[AI reads existing files to understand conventions]
-[AI suggests implementation plan]
-[AI writes the module]
-
-> run tests
-Can I run this command? [y/N] > y
-[Test output displayed]
-```
+It's configured to be careful—it asks before running commands, avoids reading sensitive files (.env, keys, etc.), and verifies file edits with hashes.
 
 ## Architecture
 
-- **`lib/ex_code.ex`** - Entry point for the escript
-- **`lib/ex_code/cli.ex`** - CLI handling and banner display
-- **`lib/ex_code/repl.ex`** - REPL loop and input handling
-- **`lib/ex_code/execute.ex`** - OpenAI API interaction and response handling
-- **`lib/ex_code/tools.ex`** - Tool definitions and implementations
-- **`lib/ex_code/context.ex`** - Conversation context management
-- **`lib/ex_code/env.ex`** - Environment variable handling
-- **`lib/ex_code/term_ui.ex`** - Terminal UI utilities
-- **`lib/ex_code/system_prompt.ex`** - System prompt configuration
+- `cli.ex` - Entry point, prints the banner
+- `repl.ex` - Main REPL loop, handles `/exit`, `/ctx`
+- `execute.ex` - Calls the OpenAI API, processes responses
+- `tools.ex` - Tool implementations (read, write, edit, run)
+- `context.ex` - Keeps track of the conversation
+- `env.ex` - Reads config from Application env
+- `term_ui.ex` - Color helpers for terminal output
+- `system_prompt.ex` - The system prompt that defines the AI's behavior
 
 ## License
 
 MIT
+
+---
+
+_This README was written by ExCode—the very AI assistant it describes._
