@@ -148,7 +148,7 @@ defmodule ExCode.Tools do
   end
 
   def run_bash_command(%{"command" => command}) do
-    if user_permission("$ #{command}\nCan I run this command?") do
+    if user_permission?("$ #{command}\nCan I run this command?") do
       shell =
         case System.find_executable("bash") do
           nil -> "sh"
@@ -167,7 +167,8 @@ defmodule ExCode.Tools do
     end
   end
 
-  defp user_permission(message) do
+  @spec user_permission?(String.t()) :: bool
+  defp user_permission?(message) do
     case IO.gets(TermUI.yellow("#{message} [y/N] > ")) do
       :eof -> false
       answer -> String.trim(answer) |> String.downcase() == "y"
