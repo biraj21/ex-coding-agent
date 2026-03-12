@@ -102,9 +102,7 @@ defmodule ExCode.Execute do
     ctx = Context.add_many(ctx, tool_call_outputs)
 
     if usage != nil do
-      ("Usage: " <> Jason.encode!(usage, pretty: [indent: "  "]))
-      |> TermUI.magenta()
-      |> IO.puts()
+      print_usage(usage)
     end
 
     print_divider()
@@ -234,6 +232,16 @@ defmodule ExCode.Execute do
 
   defp print_divider() do
     String.duplicate("-", TermUI.columns())
+    |> IO.puts()
+  end
+
+  defp print_usage(usage) do
+    prompt = Map.get(usage, "prompt_tokens", "?")
+    completion = Map.get(usage, "completion_tokens", "?")
+    total = Map.get(usage, "total_tokens", "?")
+
+    "Usage: prompt=#{prompt} completion=#{completion} total=#{total}"
+    |> TermUI.magenta()
     |> IO.puts()
   end
 end

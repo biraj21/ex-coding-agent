@@ -6,6 +6,7 @@ defmodule ExCode.Tools do
       "type" => "function",
       "function" => %{
         "name" => "read_file",
+        "string" => true,
         "description" =>
           "Read and return the contents of a file. Each returned line is prefixed with '<line_number>:<content_hash> | '. These prefixes are metadata added by the tool and are NOT part of the actual file contents.",
         "parameters" => %{
@@ -24,6 +25,7 @@ defmodule ExCode.Tools do
       "type" => "function",
       "function" => %{
         "name" => "write_file",
+        "string" => true,
         "description" => "Write content to a file",
         "parameters" => %{
           "type" => "object",
@@ -45,8 +47,8 @@ defmodule ExCode.Tools do
       "type" => "function",
       "function" => %{
         "name" => "run_bash_command",
-        "description" =>
-          "Execute a shell command. The user will be asked for permission before execution and may deny it.",
+        "string" => true,
+        "description" => "Execute a shell command.",
         "parameters" => %{
           "type" => "object",
           "required" => ["command"],
@@ -63,6 +65,7 @@ defmodule ExCode.Tools do
       "type" => "function",
       "function" => %{
         "name" => "edit_file",
+        "string" => true,
         "description" =>
           "Edit a range of lines in a file. Use the hashes to verify the correct lines.",
         "parameters" => %{
