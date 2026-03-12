@@ -39,4 +39,11 @@ defmodule ExCode.TermUI do
   defp wrap(code, text) do
     code <> text <> @reset
   end
+
+  def columns() do
+    case :io.columns() do
+      {:ok, cols} -> cols
+      _ -> 80
+    end
+  end
 end

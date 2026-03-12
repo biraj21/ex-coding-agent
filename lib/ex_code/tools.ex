@@ -45,7 +45,8 @@ defmodule ExCode.Tools do
       "type" => "function",
       "function" => %{
         "name" => "run_bash_command",
-        "description" => "Execute a shell command",
+        "description" =>
+          "Execute a shell command. The user will be asked for permission before execution and may deny it.",
         "parameters" => %{
           "type" => "object",
           "required" => ["command"],

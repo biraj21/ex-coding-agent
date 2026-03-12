@@ -68,32 +68,35 @@ defmodule ExCode.REPL do
   end
 
   defp handle_query(repl, input) do
-    case execute_with_retry(repl, input) do
-      {:ok, updated_ctx} ->
-        {:continue, %{repl | ctx: updated_ctx}}
+    repl = %{repl | ctx: Context.add(repl.ctx, ChatMessage.user(input))}
 
-      {:error, reason} ->
+    case execute_with_retry(repl) do
+      {:ok, repl} ->
+        {:continue, repl}
+
+      {:error, reason, repl} ->
         IO.puts(TermUI.red("Error: #{inspect(reason)}"))
         {:continue, repl}
     end
   end
 
-  defp execute_with_retry(repl, input, attempt \\ 0) do
-    case ExCode.Execute.execute(repl.client, input, repl.ctx) do
-      {:ok, updated_ctx} ->
-        {:ok, updated_ctx}
+  @spec execute_with_retry(t(), non_neg_integer()) :: {:ok, t()} | {:error, any(), t()}
+  defp execute_with_retry(repl, attempt \\ 0) do
+    case ExCode.Execute.execute(repl.client, repl.ctx) do
+      {:ok, ctx} ->
+        {:ok, %{repl | ctx: ctx}}
 
-      {:error, %OpenaiEx.Error{kind: :rate_limit} = err} when attempt < 5 ->
+      {:error, %OpenaiEx.Error{kind: :rate_limit} = reason, ctx} when attempt < 5 ->
         delay_secs = backoff(attempt + 1)
 
-        IO.puts(TermUI.red("Error: #{inspect(err)}"))
+        IO.puts(TermUI.red("Error: #{inspect(reason)}"))
         IO.puts(TermUI.yellow("Rate limited. Retrying in #{delay_secs}s..."))
 
         Process.sleep(delay_secs * 1000)
-        execute_with_retry(repl, input, attempt + 1)
+        execute_with_retry(%{repl | ctx: ctx}, attempt + 1)
 
-      {:error, err} ->
-        {:error, err}
+      {:error, reason, ctx} ->
+        {:error, reason, %{repl | ctx: ctx}}
     end
   end
 

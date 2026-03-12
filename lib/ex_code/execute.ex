@@ -13,22 +13,17 @@ defmodule ExCode.Execute do
 
   @spec execute(
           %OpenaiEx{},
-          String.t(),
-          ExCode.Context.t()
-        ) :: {:error, struct()} | {:ok, ExCode.Context.t()}
-  def execute(client, prompt, ctx) do
-    user_msg = ChatMessage.user(prompt)
-
-    ctx
-    |> Context.add(user_msg)
-    |> run_until_done(client)
+          Context.t()
+        ) :: {:ok, Context.t()} | {:error, any(), Context.t()}
+  def execute(client, ctx) do
+    run_until_done(ctx, client)
   end
 
   defp run_until_done(ctx, client) do
     case run_completion(client, ctx) do
       {:done, ctx} -> {:ok, ctx}
       {:tools, ctx} -> run_until_done(ctx, client)
-      {:error, reason} -> {:error, reason}
+      {:error, reason} -> {:error, reason, ctx}
     end
   end
 
@@ -90,9 +85,18 @@ defmodule ExCode.Execute do
     tool_call_outputs =
       tool_calls
       |> execute_tool_calls()
-      |> Enum.map(fn tool_result ->
-        print_tool_result(tool_result)
-        tool_result.tool_message
+      |> Enum.map(fn execution ->
+        print_tool_result(execution)
+
+        %{call: call, result: result} = execution
+
+        output_content =
+          case result do
+            {:ok, output} -> output
+            {:error, reason} -> "Error: #{reason}"
+          end
+
+        ChatMessage.tool(call.id, call.name, output_content)
       end)
 
     ctx = Context.add_many(ctx, tool_call_outputs)
@@ -103,7 +107,7 @@ defmodule ExCode.Execute do
       |> IO.puts()
     end
 
-    IO.puts("---------------------------------------")
+    print_divider()
 
     if tool_call_outputs == [] do
       {:done, ctx}
@@ -173,18 +177,13 @@ defmodule ExCode.Execute do
     Enum.zip(tool_calls, tool_results)
     |> Enum.map(fn {tool_call, result} ->
       case result do
-        {:ok, tool_result} ->
-          tool_result
+        {:ok, execution} ->
+          execution
 
         {:exit, reason} ->
-          %{id: id, name: name, args_pretty: args_pretty} = tool_call
-          output = "Error: task exited: #{inspect(reason)}"
-
           %{
-            name: name,
-            args_pretty: args_pretty,
-            colored_output: TermUI.red("error: task exited: #{Exception.format_exit(reason)}"),
-            tool_message: ChatMessage.tool(id, name, output)
+            call: tool_call,
+            result: {:error, "task exited: #{inspect(reason)}"}
           }
       end
     end)
@@ -198,29 +197,43 @@ defmodule ExCode.Execute do
        }) do
     result = Tools.handle_tool_call(name, args_json)
 
-    {output, colored_output} =
-      case result do
-        {:ok, output} -> {output, TermUI.cyan(output)}
-        {:error, reason} -> {"Error: #{reason}", TermUI.red("error: #{reason}")}
-      end
-
     %{
-      name: name,
-      args_pretty: args_pretty,
-      colored_output: colored_output,
-      tool_message: ChatMessage.tool(id, name, output)
+      call: %{
+        id: id,
+        name: name,
+        args_json: args_json,
+        args_pretty: args_pretty
+      },
+      result: result
     }
   end
 
-  defp print_tool_result(tool_result) do
+  defp print_tool_result(%{call: call, result: result}) do
+    {output, color_func} =
+      case result do
+        {:ok, output} ->
+          if call.name == "read_file" do
+            {"Result: File read successfully", &TermUI.green/1}
+          else
+            {"Result: #{output}", &TermUI.green/1}
+          end
+
+        {:error, reason} ->
+          {"Error: #{reason}", &TermUI.red/1}
+      end
+
     [
-      "\n===== Tool Call =====",
-      "Name: #{tool_result.name}",
-      "Args: #{tool_result.args_pretty}",
-      "Output:\n#{tool_result.colored_output}"
+      "\n===== Tool #{call.name} =====",
+      "Args: #{call.args_pretty}",
+      output
     ]
     |> Enum.join("\n")
-    |> TermUI.cyan()
+    |> color_func.()
+    |> IO.puts()
+  end
+
+  defp print_divider() do
+    String.duplicate("-", TermUI.columns())
     |> IO.puts()
   end
 end
